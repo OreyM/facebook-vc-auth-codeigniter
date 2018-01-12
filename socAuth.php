@@ -84,4 +84,73 @@ Class LoginSocial Extends CI_Controller{
         $this->loginModel->addNewUserInDB($newUserData);
     }
 
+    public function signIn($socialAuthorization){
+        switch ($socialAuthorization){
+            case 'fb':
+                if(isset($_GET['code'])) {
+                    $tokenLink = 'https://graph.facebook.com/v2.9/oauth/access_token?client_id='.FB_ID.'&redirect_uri='.FB_URL.'&client_secret='.FB_CODE.'&code='.$_GET['code'];
+                    $this->setTokenData($tokenLink);
+                    $tokenFB = $this->getTokenData();
+
+                    if ($tokenFB) {
+                        $userLink = 'https://graph.facebook.com/v2.9/me?client_id=' . FB_ID . '&redirect_uri=' . FB_URL . '&client_secret=' . FB_CODE . '&code=' . $_GET['code'] . '&access_token=' . $tokenFB['access_token'] . '&fields=id,name,email';
+                        $this->setUserData($userLink);
+
+                        $userFB = $this->getUserData();
+
+                        if ($userFB) {
+                            $this->setSessionData($userFB);
+                            $sessionData = $this->getSessionData();
+                            $this->session->set_userdata($sessionData);
+
+                            if ($this->loginModel->checkUserIDinDB($sessionData['id']))
+                                $this->newUserAutorization($sessionData);
+                        }
+                        else
+                            redirect(base_url() . 'login');
+                    }
+                    else
+                        redirect(base_url() . 'login');
+                }
+                break;
+
+            case 'vc':
+                if(isset($_GET['code'])) {
+                    $tokenLink = 'https://oauth.vk.com/access_token?client_id='.VC_ID.'&redirect_uri='.VC_URL.'&client_secret='.VC_SECRET.'&code='.$_GET['code'];
+                    $this->setTokenData($tokenLink);
+                    $tokenVC = $this->getTokenData();
+
+                    if ($tokenVC) {
+                        $userLink = 'https://api.vk.com/method/users.get?user_id='.$tokenVC['user_id'].'&access_token='.$tokenVC['access_token'].'&fields=uid,first_name,last_name,photo_big';
+                        $this->setUserData($userLink);
+
+                        $userVC = $this->getUserData();
+
+                        if ($userVC) {
+                            $this->setSessionData($userVC);
+                            $sessionData = $this->getSessionData();
+                            $this->session->set_userdata($sessionData);
+
+                            if ($this->loginModel->checkUserIDinDB($sessionData['id']))
+                                $this->newUserAutorization($sessionData);
+                        }
+                        else
+                            redirect(base_url() . 'login');
+                    }
+                    else
+                        redirect(base_url() . 'login');
+                }
+                break;
+
+            default:
+                redirect(base_url() . 'login');
+        }
+        redirect(base_url() . 'login');
+    }
+
+    public function logout(){
+        $this->session->unset_userdata();
+        redirect(base_url());
+    }
+
 }
